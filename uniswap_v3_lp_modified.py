@@ -50,9 +50,6 @@ class UniswapV3LPInternalState:
         liquidity (float): The position liquidity.
         cash (float): The cash balance.
     """
-    price_lower: float = 0.0
-    price_init: float = 0.0
-    price_upper: float = 0.0
     positions: List[Position] = field(default_factory=list)
     cash: float = 0.0
 
@@ -133,10 +130,6 @@ class UniswapV3LPEntity(BasePoolEntity):
             price_upper=price_upper,
             price_lower=price_lower,
         )
-        if len(self._internal_state.positions) == 0:
-            self._internal_state.price_lower = new_position.price_lower
-        self._internal_state.price_upper = max(self._internal_state.price_upper, new_position.price_upper)
-        self._internal_state.price_init = self._global_state.price
         self._internal_state.positions.append(new_position)
 
     def action_close_position(self):
@@ -146,12 +139,10 @@ class UniswapV3LPEntity(BasePoolEntity):
         if not self.is_position:
             raise EntityException("No position to close.")
         cash = self.balance * (1 - self.trading_fee)
+        print(cash)
         self.is_position = False
         self._internal_state.positions.clear()
         self._internal_state.cash = cash
-        self._internal_state.price_upper = 0.0
-        self._internal_state.price_lower = 0.0
-
 
     def update_state(self, state: UniswapV3LPGlobalState) -> None:
         """
@@ -181,6 +172,7 @@ class UniswapV3LPEntity(BasePoolEntity):
             else:
                 position.token0_amount = position.liquidity * (pu**0.5 - pl**0.5)
                 position.token1_amount = 0
+            print(self.calculate_fees(position))
             self._internal_state.cash += self.calculate_fees(position)
 
     @property

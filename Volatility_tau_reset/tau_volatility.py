@@ -4,8 +4,11 @@ import numpy as np
 
 from fractal.core.base import (Action, ActionToTake, BaseStrategy,
                                BaseStrategyParams, NamedEntity)
-from fractal.core.entities import UniswapV3LPConfig, UniswapV3LPEntity
 
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent))
+from Modified_entity.uniswap_v3_lp_modified import UniswapV3LPConfig, UniswapV3LPEntity
 
 @dataclass
 class TauResetParams(BaseStrategyParams):
