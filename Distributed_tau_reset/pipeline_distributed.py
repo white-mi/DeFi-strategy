@@ -10,17 +10,15 @@ from sklearn.model_selection import ParameterGrid
 from fractal.core.pipeline import (
     DefaultPipeline, MLFlowConfig, ExperimentConfig)
 
-from tau_volatility_and_dist_strategy import TauResetStrategy, build_observations, THE_GRAPH_API_KEY
-
+from tau_distribution import TauResetStrategy, build_observations, THE_GRAPH_API_KEY
 
 def build_grid():
     grid = ParameterGrid({
-        'U' : [0, 1],
-        'C' : [2000, 5000, 7000, 10000],
-        'BINS': [1, 2, 3, 4, 5, 10, 20], 
-        'INFO_TIME': [8, 24, 3 * 24, 7 * 24, 14 * 24, 30 * 24], 
-        'ALPHA' : [0, 0.25, 0.5, 0.75, 1],
-        'INITIAL_BALANCE': [1_000_000] 
+        'TAU': [5, 10, 30, 50, 70],
+        'BINS': [1, 2, 3, 4, 5, 10, 20],
+        'INFO_TIME': [24, 24 * 3, 24 * 7, 30 * 24], 
+        'INITIAL_BALANCE': [1_000_000],
+        'U' : [0, 1]
     })
     return grid
 
@@ -39,7 +37,7 @@ if __name__ == '__main__':
     # Define MLFlow and Experiment configurations
     mlflow_config: MLFlowConfig = MLFlowConfig(
         mlflow_uri='http://127.0.0.1:8080',
-        experiment_name='tau_merged_strategy_exp_1'
+        experiment_name='tau_based_strategy_exp-4'
     )
     observations = build_observations(ticker, pool_address, THE_GRAPH_API_KEY, start_time, end_time, fidelity=fidelity)
     assert len(observations) > 0

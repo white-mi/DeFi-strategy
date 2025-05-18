@@ -24,6 +24,8 @@ from fractal.core.base import Observation
 from fractal.core.entities import UniswapV3LPGlobalState
 
 
+
+
 @dataclass
 class TauResetParams(BaseStrategyParams):
     """
@@ -31,8 +33,7 @@ class TauResetParams(BaseStrategyParams):
     - TAU: The width of the price range (bucket) around the current price.
     - INITIAL_BALANCE: The initial balance for liquidity allocation.
     """
-    C : int
-    ALPHA : int
+    TAU: float
     INITIAL_BALANCE: float
     BINS: int
     INFO_TIME: int
@@ -61,7 +62,6 @@ class TauResetStrategy(BaseStrategy):
     current_price: float = 0
     tick_counter: int = 0
     last_center : float = 0
-    tau : float = 30
 
     def __init__(self, params: TauResetParams, debug: bool = False, *args, **kwargs):
         self._params: TauResetParams = None  # set for type hinting
@@ -88,7 +88,7 @@ class TauResetStrategy(BaseStrategy):
         self.previous_price = self.get_entity('UNISWAP_V3').global_state.price
         self.current_price = self.previous_price
 
-    def _update_dist_and_tau(self):
+    def _update_dist(self):
         
         prices = np.asarray(self.new_distribution, dtype=np.float64)
 
@@ -97,19 +97,13 @@ class TauResetStrategy(BaseStrategy):
         if self._params.U == 0:
             prices = prices[1:] - prices[:-1]
 
-        Q1 = np.percentile(prices, 25)
-        Q3 = np.percentile(prices, 75)
-        IQR = Q3 - Q1
-        std = np.std(prices)
-        self.tau = self._params.C * (self._params.ALPHA * std + (1 - self._params.ALPHA) * IQR)
-
         hist, bin_edges = np.histogram(prices, bins=self._params.BINS)
 
         self.distribution = list(hist)
 
 
     def _check_rebalance(self):
-        tau = self.tau
+        tau = self._params.TAU
         tick_spacing = self.tick_spacing
         price_lower = self.last_center * 1.0001 ** (-tau * tick_spacing)
         price_upper = self.last_center * 1.0001 ** (tau * tick_spacing)
@@ -130,7 +124,7 @@ class TauResetStrategy(BaseStrategy):
         self.tick_counter += 1
         self.new_distribution.append(self.current_price)
         if self.tick_counter > self._params.INFO_TIME:
-            self._update_dist_and_tau()
+            self._update_dist()
             self.new_distribution = []
             self.tick_counter = 0
 
@@ -173,7 +167,7 @@ class TauResetStrategy(BaseStrategy):
             self._debug("Liquidity withdrawn from the current range.")
 
         # Step 2: Calculate new range boundaries
-        tau = self.tau
+        tau = self._params.TAU
         reference_price: float = entity.global_state.price
         tick_spacing = self.tick_spacing
         price_lower = reference_price * 1.0001 ** (-tau * tick_spacing)
@@ -220,7 +214,7 @@ from fractal.core.base import Observation
 from fractal.core.entities import UniswapV3LPGlobalState
 
 
-THE_GRAPH_API_KEY = '149d25473edb2b1e7db32f27051d74bd'
+THE_GRAPH_API_KEY = 'YOUR_GRAPH_API_KEY'
 
 
 def get_observations(
@@ -281,14 +275,7 @@ if __name__ == '__main__':
     token0_decimals, token1_decimals = EthereumUniswapV3Loader(
         THE_GRAPH_API_KEY, loader_type=LoaderType.CSV).get_pool_decimals(pool_address)
     
-    ##C : int
-    # ALPHA : int
-    # INITIAL_BALANCE: float
-    # BINS: int
-    # INFO_TIME: int
-    # U : int
-
-    params: TauResetParams = TauResetParams(C=5000, ALPHA=1, INITIAL_BALANCE=1_000_000, BINS=3, INFO_TIME=336, U=1)
+    params: TauResetParams = TauResetParams(TAU=40, INITIAL_BALANCE=1_000_000, BINS=3, INFO_TIME=24*4, U=1)
     TauResetStrategy.token0_decimals = token0_decimals
     TauResetStrategy.token1_decimals = token1_decimals
     TauResetStrategy.tick_spacing = 60

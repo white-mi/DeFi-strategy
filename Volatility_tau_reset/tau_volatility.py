@@ -175,8 +175,7 @@ from fractal.loaders.structs import PriceHistory, PoolHistory
 from fractal.core.base import Observation
 from fractal.core.entities import UniswapV3LPGlobalState
 
-
-THE_GRAPH_API_KEY = '149d25473edb2b1e7db32f27051d74bd'
+THE_GRAPH_API_KEY = 'YOUR_GRAPH_API_KEY'
 
 
 def get_observations(
